@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Alívio de Tanque — Simulador VAPV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="frame">
+
+  <header class="topbar">
+    <div class="topbar-title">
+      <span class="eyebrow">Mímico de Processo · Tanque de Armazenamento</span>
+      <h1>Painel de Alívio de Pressão &amp; Vácuo</h1>
+    </div>
+    <div class="topbar-status" id="topStatus">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusLabel">OPERAÇÃO NORMAL</span>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <!-- ===================== SCHEMATIC (P&ID) ===================== -->
+    <section class="panel schematic-panel">
+      <div class="panel-label">TAG-101 · ESQUEMA DO TANQUE</div>
+      <div class="schematic-wrap">
+        <svg id="tankSvg" viewBox="0 0 560 640" xmlns="http://www.w3.org/2000/svg">
+
+          <!-- grid backdrop -->
+          <defs>
+            <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+              <path d="M 24 0 L 0 0 0 24" fill="none" stroke="var(--line)" stroke-width="0.6" opacity="0.35"/>
+            </pattern>
+            <linearGradient id="liquidGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3a6f8f"/>
+              <stop offset="100%" stop-color="#1c3c50"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="560" height="640" fill="url(#grid)"/>
+
+          <!-- Nitrogen supply line (left) -->
+          <g id="inertLine">
+            <text x="18" y="150" class="tag-text">N₂ SUPRIMENTO</text>
+            <line x1="30" y1="165" x2="30" y2="230" class="pipe"/>
+            <line x1="30" y1="230" x2="150" y2="230" class="pipe"/>
+            <!-- inertization valve symbol (regulator) -->
+            <g id="valveInert" transform="translate(150,230)">
+              <circle r="16" class="valve-body"/>
+              <path d="M -10 -8 L 10 8 M -10 8 L 10 -8" class="valve-x"/>
+              <rect x="-4" y="-26" width="8" height="10" class="valve-stem"/>
+            </g>
+            <line x1="166" y1="230" x2="230" y2="230" class="pipe" id="inertToTank"/>
+            <text x="86" y="222" class="tag-text small">PV-1 INERTIZAÇÃO</text>
+            <!-- flow particles -->
+            <circle class="flow-dot inert-flow" cy="230" r="3"/>
+          </g>
+
+          <!-- VAPV assembly (top center) -->
+          <g id="vapvGroup" transform="translate(280,90)">
+            <text x="0" y="-56" text-anchor="middle" class="tag-text">VAPV-1</text>
+            <text x="0" y="-42" text-anchor="middle" class="tag-text small">ALÍVIO PRESSÃO/VÁCUO</text>
+            <!-- weighted pallet valve symbol -->
+            <rect x="-30" y="-28" width="60" height="20" rx="2" class="valve-housing"/>
+            <path id="vapvFlapOut" d="M -22 -28 L 0 -50 L 22 -28 Z" class="valve-flap"/>
+            <path id="vapvFlapIn" d="M -22 -8 L 0 14 L 22 -8 Z" class="valve-flap" transform="translate(0,0)"/>
+            <line x1="0" y1="-8" x2="0" y2="26" class="pipe"/>
+            <!-- vent arrows -->
+            <g id="ventOutArrows" class="flow-arrows">
+              <path d="M -8 -60 L 0 -76 L 8 -60" class="arrow-out"/>
+              <path d="M -18 -54 L -10 -70 L -2 -54" class="arrow-out"/>
+              <path d="M 2 -54 L 10 -70 L 18 -54" class="arrow-out"/>
+            </g>
+            <g id="ventInArrows" class="flow-arrows">
+              <path d="M -8 -6 L 0 10 L 8 -6" class="arrow-in"/>
+            </g>
+          </g>
+
+          <!-- Emergency valve (top right) -->
+          <g id="emergencyGroup" transform="translate(430,110)">
+            <text x="0" y="-40" text-anchor="middle" class="tag-text crit-text">EV-1</text>
+            <text x="0" y="-26" text-anchor="middle" class="tag-text small crit-text">EMERGÊNCIA</text>
+            <rect x="-26" y="-14" width="52" height="18" rx="2" class="valve-housing emergency-housing"/>
+            <path id="emergFlap" d="M -18 -14 L 0 -34 L 18 -14 Z" class="valve-flap emergency-flap"/>
+            <line x1="0" y1="4" x2="0" y2="40" class="pipe"/>
+            <g id="emergArrows" class="flow-arrows">
+              <path d="M -10 -40 L 0 -60 L 10 -40" class="arrow-out emergency-arrow"/>
+              <path d="M -22 -32 L -14 -50 L -6 -32" class="arrow-out emergency-arrow"/>
+              <path d="M 6 -32 L 14 -50 L 22 -32" class="arrow-out emergency-arrow"/>
+            </g>
+          </g>
+
+          <!-- pipes into tank nozzle -->
+          <line x1="280" y1="116" x2="280" y2="170" class="pipe"/>
+          <line x1="430" y1="150" x2="430" y2="170" class="pipe"/>
+          <line x1="230" y1="230" x2="280" y2="230" class="pipe"/>
+          <line x1="280" y1="170" x2="280" y2="230" class="pipe"/>
+          <line x1="280" y1="170" x2="430" y2="170" class="pipe"/>
+          <line x1="430" y1="170" x2="430" y2="170" class="pipe"/>
+
+          <!-- Tank body -->
+          <g id="tankBody">
+            <rect x="140" y="230" width="280" height="330" rx="10" class="tank-shell"/>
+            <!-- vapor space label -->
+            <text x="280" y="270" text-anchor="middle" class="tag-text small dim">ESPAÇO DE VAPOR</text>
+            <!-- liquid clip -->
+            <clipPath id="tankClip">
+              <rect x="144" y="234" width="272" height="322" rx="7"/>
+            </clipPath>
+            <rect id="liquidLevel" x="144" y="450" width="272" height="106" fill="url(#liquidGrad)" clip-path="url(#tankClip)"/>
+            <line id="liquidSurface" x1="144" y1="450" x2="416" y2="450" class="surface-line"/>
+            <rect x="140" y="230" width="280" height="330" rx="10" class="tank-shell-outline"/>
+          </g>
+
+          <!-- Pump in (bottom left) -->
+          <g id="pumpInGroup" transform="translate(90,540)">
+            <circle r="22" class="pump-body"/>
+            <path d="M -8 0 L 8 0 M 8 0 L 2 -6 M 8 0 L 2 6" class="pump-arrow" id="pumpInArrow"/>
+            <text x="0" y="40" text-anchor="middle" class="tag-text small">P-1 ENCHIMENTO</text>
+            <line x1="22" y1="0" x2="140" y2="0" class="pipe" id="pumpInPipe" transform="translate(0,20)"/>
+          </g>
+          <line x1="112" y1="560" x2="140" y2="560" class="pipe"/>
+
+          <!-- Pump out (bottom right) -->
+          <g id="pumpOutGroup" transform="translate(470,540)">
+            <circle r="22" class="pump-body"/>
+            <path d="M -8 0 L 8 0 M -8 0 L -2 -6 M -8 0 L -2 6" class="pump-arrow" id="pumpOutArrow"/>
+            <text x="0" y="40" text-anchor="middle" class="tag-text small">P-2 ESVAZIAMENTO</text>
+          </g>
+          <line x1="420" y1="560" x2="448" y2="560" class="pipe"/>
+
+          <!-- thermometer -->
+          <g id="thermoGroup" transform="translate(490,300)">
+            <text x="0" y="-70" text-anchor="middle" class="tag-text small">TI-1</text>
+            <rect x="-6" y="-60" width="12" height="90" rx="6" class="thermo-tube"/>
+            <circle cy="40" r="14" class="thermo-bulb"/>
+            <rect id="thermoFill" x="-3" y="-30" width="6" height="60" rx="3" class="thermo-fill"/>
+            <circle cy="40" r="10" class="thermo-fill-bulb"/>
+          </g>
+
+        </svg>
+      </div>
+    </section>
+
+    <!-- ===================== GAUGES ===================== -->
+    <section class="panel gauges-panel">
+      <div class="panel-label">INSTRUMENTAÇÃO</div>
+
+      <div class="gauge-block">
+        <svg viewBox="0 0 200 130" class="gauge-svg">
+          <path d="M 20 110 A 80 80 0 0 1 180 110" class="gauge-track"/>
+          <path id="gaugeZoneCrit1" d="" class="gauge-zone zone-crit"/>
+          <path id="gaugeZoneWarn1" d="" class="gauge-zone zone-warn"/>
+          <path id="gaugeZoneSafe" d="" class="gauge-zone zone-safe"/>
+          <path id="gaugeZoneWarn2" d="" class="gauge-zone zone-warn"/>
+          <path id="gaugeZoneCrit2" d="" class="gauge-zone zone-crit"/>
+          <line id="gaugeNeedle" x1="100" y1="110" x2="100" y2="40" class="gauge-needle"/>
+          <circle cx="100" cy="110" r="6" class="gauge-hub"/>
+        </svg>
+        <div class="gauge-readout">
+          <span class="gauge-value" id="pressureValue">0.0</span>
+          <span class="gauge-unit">mbar</span>
+        </div>
+        <div class="gauge-caption">PRESSÃO INTERNA (PI-1)</div>
+      </div>
+
+      <div class="mini-readouts">
+        <div class="mini-item">
+          <span class="mini-label">TEMPERATURA</span>
+          <span class="mini-value" id="tempValue">25.0 °C</span>
+        </div>
+        <div class="mini-item">
+          <span class="mini-label">NÍVEL DE LÍQUIDO</span>
+          <span class="mini-value" id="levelValue">50 %</span>
+        </div>
+        <div class="mini-item">
+          <span class="mini-label">TEMPO DE SIMULAÇÃO</span>
+          <span class="mini-value" id="timeValue">00:00</span>
+        </div>
+      </div>
+
+      <div class="valve-states">
+        <div class="valve-state-row" id="rowInert">
+          <span class="dot" id="dotInert"></span>
+          <span class="vs-label">Inertização (N₂)</span>
+          <span class="vs-val" id="valInert">FECHADA</span>
+        </div>
+        <div class="valve-state-row" id="rowVapvP">
+          <span class="dot" id="dotVapvP"></span>
+          <span class="vs-label">VAPV — alívio pressão</span>
+          <span class="vs-val" id="valVapvP">FECHADA</span>
+        </div>
+        <div class="valve-state-row" id="rowVapvV">
+          <span class="dot" id="dotVapvV"></span>
+          <span class="vs-label">VAPV — alívio vácuo</span>
+          <span class="vs-val" id="valVapvV">FECHADA</span>
+        </div>
+        <div class="valve-state-row" id="rowEmerg">
+          <span class="dot" id="dotEmerg"></span>
+          <span class="vs-label">Válvula de emergência</span>
+          <span class="vs-val" id="valEmerg">FECHADA</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== TREND CHART ===================== -->
+    <section class="panel chart-panel">
+      <div class="panel-label">REGISTRADOR DE TENDÊNCIA · PI-1</div>
+      <canvas id="trendChart" width="900" height="220"></canvas>
+      <div class="chart-legend">
+        <span><i class="lg lg-safe"></i>Faixa normal</span>
+        <span><i class="lg lg-warn"></i>Faixa de atuação VAPV</span>
+        <span><i class="lg lg-crit"></i>Limite de emergência</span>
+      </div>
+    </section>
+
+    <!-- ===================== CONTROLS ===================== -->
+    <section class="panel controls-panel">
+      <div class="panel-label">CONTROLES DE SIMULAÇÃO</div>
+
+      <div class="control-group">
+        <label for="pumpSlider">Bombeamento <span class="control-value" id="pumpSliderVal">0 L/min</span></label>
+        <input type="range" id="pumpSlider" min="-10" max="10" step="0.5" value="0">
+        <div class="control-hint">
+          <span>← Esvaziando (sucção / vácuo)</span>
+          <span>Enchendo (compressão) →</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label for="tempSlider">Temperatura do produto <span class="control-value" id="tempSliderVal">25.0 °C</span></label>
+        <input type="range" id="tempSlider" min="-10" max="70" step="0.5" value="25">
+        <div class="control-hint">
+          <span>← Resfriamento (contração)</span>
+          <span>Aquecimento (dilatação) →</span>
+        </div>
+      </div>
+
+      <div class="control-group toggle-group">
+        <label class="toggle-label">
+          <input type="checkbox" id="blockVapv">
+          <span>Simular obstrução da VAPV (força atuação da emergência)</span>
+        </label>
+      </div>
+
+      <div class="control-buttons">
+        <button id="btnReset" class="btn btn-secondary">Reiniciar simulação</button>
+        <button id="btnPauseChart" class="btn btn-secondary">Pausar registrador</button>
+      </div>
+    </section>
+
+    <!-- ===================== EVENT LOG ===================== -->
+    <section class="panel log-panel">
+      <div class="panel-label">REGISTRO DE EVENTOS</div>
+      <div class="log-list" id="logList"></div>
+    </section>
+
+  </main>
+
+  <footer class="footbar">
+    <span>Modelo educacional simplificado — não representa nenhum fabricante ou norma específica.</span>
+  </footer>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
