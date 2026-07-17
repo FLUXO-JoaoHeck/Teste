@@ -28,6 +28,16 @@
     <!-- ===================== SCHEMATIC (P&ID) ===================== -->
     <section class="panel schematic-panel">
       <div class="panel-label">TAG-101 · ESQUEMA DO TANQUE</div>
+
+      <!--
+        NOTA PARA EDIÇÃO FUTURA:
+        Cada válvula/instrumento abaixo é um nó HTML (.equip-node) com uma
+        <img> independente em /icons/. Para trocar o desenho de qualquer
+        válvula ou instrumento, basta substituir o arquivo .svg correspondente
+        em /icons/ (ou trocar o atributo src) — não é necessário mexer no JS.
+        A posição de cada nó é controlada por --x / --y (em % da área do
+        esquema) definidos inline, e pelo tamanho em .equip-icon via CSS.
+      -->
       <div class="schematic-wrap">
         <svg id="tankSvg" viewBox="0 0 560 640" xmlns="http://www.w3.org/2000/svg">
 
@@ -43,71 +53,44 @@
           </defs>
           <rect x="0" y="0" width="560" height="640" fill="url(#grid)"/>
 
-          <!-- Nitrogen supply line (left) -->
-          <g id="inertLine">
-            <text x="18" y="150" class="tag-text">N₂ SUPRIMENTO</text>
-            <line x1="30" y1="165" x2="30" y2="230" class="pipe"/>
-            <line x1="30" y1="230" x2="150" y2="230" class="pipe"/>
-            <!-- inertization valve symbol (regulator) -->
-            <g id="valveInert" transform="translate(150,230)">
-              <circle r="16" class="valve-body"/>
-              <path d="M -10 -8 L 10 8 M -10 8 L 10 -8" class="valve-x"/>
-              <rect x="-4" y="-26" width="8" height="10" class="valve-stem"/>
-            </g>
-            <line x1="166" y1="230" x2="230" y2="230" class="pipe" id="inertToTank"/>
-            <text x="86" y="222" class="tag-text small">PV-1 INERTIZAÇÃO</text>
-            <!-- flow particles -->
-            <circle class="flow-dot inert-flow" cy="230" r="3"/>
+          <!-- Nitrogen supply piping -->
+          <line x1="30" y1="165" x2="30" y2="230" class="pipe"/>
+          <line x1="30" y1="230" x2="150" y2="230" class="pipe"/>
+          <line x1="166" y1="230" x2="230" y2="230" class="pipe"/>
+          <circle class="flow-dot inert-flow" cy="230" r="3"/>
+          <text x="18" y="150" class="tag-text">N₂ SUPRIMENTO</text>
+
+          <!-- vent arrows above VAPV -->
+          <g id="ventOutArrows" class="flow-arrows" transform="translate(280,52)">
+            <path d="M -8 4 L 0 -12 L 8 4" class="arrow-out"/>
+            <path d="M -18 10 L -10 -6 L -2 10" class="arrow-out"/>
+            <path d="M 2 10 L 10 -6 L 18 10" class="arrow-out"/>
+          </g>
+          <g id="ventInArrows" class="flow-arrows" transform="translate(280,92)">
+            <path d="M -8 -6 L 0 10 L 8 -6" class="arrow-in"/>
           </g>
 
-          <!-- VAPV assembly (top center) -->
-          <g id="vapvGroup" transform="translate(280,90)">
-            <text x="0" y="-56" text-anchor="middle" class="tag-text">VAPV-1</text>
-            <text x="0" y="-42" text-anchor="middle" class="tag-text small">ALÍVIO PRESSÃO/VÁCUO</text>
-            <!-- weighted pallet valve symbol -->
-            <rect x="-30" y="-28" width="60" height="20" rx="2" class="valve-housing"/>
-            <path id="vapvFlapOut" d="M -22 -28 L 0 -50 L 22 -28 Z" class="valve-flap"/>
-            <path id="vapvFlapIn" d="M -22 -8 L 0 14 L 22 -8 Z" class="valve-flap" transform="translate(0,0)"/>
-            <line x1="0" y1="-8" x2="0" y2="26" class="pipe"/>
-            <!-- vent arrows -->
-            <g id="ventOutArrows" class="flow-arrows">
-              <path d="M -8 -60 L 0 -76 L 8 -60" class="arrow-out"/>
-              <path d="M -18 -54 L -10 -70 L -2 -54" class="arrow-out"/>
-              <path d="M 2 -54 L 10 -70 L 18 -54" class="arrow-out"/>
-            </g>
-            <g id="ventInArrows" class="flow-arrows">
-              <path d="M -8 -6 L 0 10 L 8 -6" class="arrow-in"/>
-            </g>
+          <!-- vent arrows above emergency valve -->
+          <g id="emergArrows" class="flow-arrows" transform="translate(430,52)">
+            <path d="M -10 6 L 0 -14 L 10 6" class="arrow-out emergency-arrow"/>
+            <path d="M -22 12 L -14 -6 L -6 12" class="arrow-out emergency-arrow"/>
+            <path d="M 6 12 L 14 -6 L 22 12" class="arrow-out emergency-arrow"/>
           </g>
 
-          <!-- Emergency valve (top right) -->
-          <g id="emergencyGroup" transform="translate(430,110)">
-            <text x="0" y="-40" text-anchor="middle" class="tag-text crit-text">EV-1</text>
-            <text x="0" y="-26" text-anchor="middle" class="tag-text small crit-text">EMERGÊNCIA</text>
-            <rect x="-26" y="-14" width="52" height="18" rx="2" class="valve-housing emergency-housing"/>
-            <path id="emergFlap" d="M -18 -14 L 0 -34 L 18 -14 Z" class="valve-flap emergency-flap"/>
-            <line x1="0" y1="4" x2="0" y2="40" class="pipe"/>
-            <g id="emergArrows" class="flow-arrows">
-              <path d="M -10 -40 L 0 -60 L 10 -40" class="arrow-out emergency-arrow"/>
-              <path d="M -22 -32 L -14 -50 L -6 -32" class="arrow-out emergency-arrow"/>
-              <path d="M 6 -32 L 14 -50 L 22 -32" class="arrow-out emergency-arrow"/>
-            </g>
-          </g>
-
-          <!-- pipes into tank nozzle -->
-          <line x1="280" y1="116" x2="280" y2="170" class="pipe"/>
-          <line x1="430" y1="150" x2="430" y2="170" class="pipe"/>
+          <!-- pipes into tank nozzles -->
+          <line x1="280" y1="100" x2="280" y2="170" class="pipe"/>
+          <line x1="430" y1="120" x2="430" y2="170" class="pipe"/>
           <line x1="230" y1="230" x2="280" y2="230" class="pipe"/>
           <line x1="280" y1="170" x2="280" y2="230" class="pipe"/>
           <line x1="280" y1="170" x2="430" y2="170" class="pipe"/>
-          <line x1="430" y1="170" x2="430" y2="170" class="pipe"/>
+
+          <!-- level instrument nozzle stub -->
+          <line x1="360" y1="140" x2="360" y2="230" class="pipe"/>
 
           <!-- Tank body -->
           <g id="tankBody">
             <rect x="140" y="230" width="280" height="330" rx="10" class="tank-shell"/>
-            <!-- vapor space label -->
-            <text x="280" y="270" text-anchor="middle" class="tag-text small dim">ESPAÇO DE VAPOR</text>
-            <!-- liquid clip -->
+            <text x="240" y="270" text-anchor="middle" class="tag-text small dim">ESPAÇO DE VAPOR</text>
             <clipPath id="tankClip">
               <rect x="144" y="234" width="272" height="322" rx="7"/>
             </clipPath>
@@ -121,7 +104,6 @@
             <circle r="22" class="pump-body"/>
             <path d="M -8 0 L 8 0 M 8 0 L 2 -6 M 8 0 L 2 6" class="pump-arrow" id="pumpInArrow"/>
             <text x="0" y="40" text-anchor="middle" class="tag-text small">P-1 ENCHIMENTO</text>
-            <line x1="22" y1="0" x2="140" y2="0" class="pipe" id="pumpInPipe" transform="translate(0,20)"/>
           </g>
           <line x1="112" y1="560" x2="140" y2="560" class="pipe"/>
 
@@ -133,16 +115,44 @@
           </g>
           <line x1="420" y1="560" x2="448" y2="560" class="pipe"/>
 
-          <!-- thermometer -->
-          <g id="thermoGroup" transform="translate(490,300)">
-            <text x="0" y="-70" text-anchor="middle" class="tag-text small">TI-1</text>
-            <rect x="-6" y="-60" width="12" height="90" rx="6" class="thermo-tube"/>
-            <circle cy="40" r="14" class="thermo-bulb"/>
-            <rect id="thermoFill" x="-3" y="-30" width="6" height="60" rx="3" class="thermo-fill"/>
-            <circle cy="40" r="10" class="thermo-fill-bulb"/>
-          </g>
-
         </svg>
+
+        <!-- ============ NÓS DE EQUIPAMENTO (imagens substituíveis) ============ -->
+
+        <!-- Válvula de inertização -->
+        <div class="equip-node" id="nodeInert" style="--x:26.8%; --y:35.9%;">
+          <img class="equip-icon" src="icons/valve-blanketing.svg" alt="Válvula de inertização">
+          <span class="equip-led" id="dotInertNode"></span>
+          <span class="equip-tag">PV-1<br><small>Inertização</small></span>
+        </div>
+
+        <!-- VAPV -->
+        <div class="equip-node" id="nodeVapv" style="--x:50%; --y:15%;">
+          <img class="equip-icon" src="icons/valve-pvrv.svg" alt="Válvula de alívio de pressão e vácuo">
+          <span class="equip-led" id="dotVapvNode"></span>
+          <span class="equip-tag">VAPV-1<br><small>Pressão / Vácuo</small></span>
+        </div>
+
+        <!-- Válvula de emergência -->
+        <div class="equip-node" id="nodeEmerg" style="--x:76.8%; --y:19.5%;">
+          <img class="equip-icon" src="icons/valve-emergency.svg" alt="Válvula de emergência">
+          <span class="equip-led" id="dotEmergNode"></span>
+          <span class="equip-tag crit-text">EV-1<br><small>Emergência</small></span>
+        </div>
+
+        <!-- Instrumento de nível (reservado — radar / boia / etc.) -->
+        <div class="equip-node instrument-node" id="nodeLevel" style="--x:64.3%; --y:20.3%;">
+          <img class="equip-icon" src="icons/instrument-level.svg" alt="Instrumento de medição de nível">
+          <span class="equip-tag">LT-1<br><small>Nível (reservado)</small></span>
+        </div>
+
+        <!-- Régua de temperatura multiponto — extensão total do tanque -->
+        <div class="temp-ruler" id="tempRuler" style="--x:87.5%; --top:36.5%; --bottom:87%;">
+          <div class="temp-ruler-line"></div>
+          <div class="temp-ruler-points" id="tempRulerPoints"></div>
+          <span class="equip-tag ruler-tag">TE-1…6<br><small>Perfil térmico (reservado)</small></span>
+        </div>
+
       </div>
     </section>
 

@@ -68,17 +68,15 @@ const el = {
 
   liquidLevel: document.getElementById('liquidLevel'),
   liquidSurface: document.getElementById('liquidSurface'),
-  thermoFill: document.getElementById('thermoFill'),
-  thermoFillBulb: document.getElementById('thermoFillBulb'),
 
-  valveInert: document.getElementById('valveInert'),
-  vapvFlapOut: document.getElementById('vapvFlapOut'),
-  vapvFlapIn: document.getElementById('vapvFlapIn'),
+  nodeInert: document.getElementById('nodeInert'),
+  nodeVapv: document.getElementById('nodeVapv'),
+  nodeEmerg: document.getElementById('nodeEmerg'),
   ventOutArrows: document.getElementById('ventOutArrows'),
   ventInArrows: document.getElementById('ventInArrows'),
   inertFlow: document.querySelector('.inert-flow'),
-  emergFlap: document.getElementById('emergFlap'),
   emergArrows: document.getElementById('emergArrows'),
+  tempRulerPoints: document.getElementById('tempRulerPoints'),
 
   pumpInArrow: document.getElementById('pumpInArrow'),
   pumpOutArrow: document.getElementById('pumpOutArrow'),
@@ -263,14 +261,7 @@ function render() {
   el.liquidSurface.setAttribute('y1', liquidTop);
   el.liquidSurface.setAttribute('y2', liquidTop);
 
-  // termômetro (-10 a 70 -> altura do preenchimento)
-  const tFrac = Math.max(0, Math.min(1, (state.temperature + 10) / 80));
-  const fillH = tFrac * 60;
-  el.thermoFill.setAttribute('y', 30 - fillH);
-  el.thermoFill.setAttribute('height', fillH + 30);
-  const thermoColor = state.temperature > 45 ? 'var(--crit)' : state.temperature < 5 ? 'var(--vacuum)' : 'var(--warn)';
-  el.thermoFill.style.fill = thermoColor;
-  document.getElementById('thermoGroup').querySelector('.thermo-fill-bulb').style.fill = thermoColor;
+  updateTempRuler();
 
   // válvulas — visual
   toggleValveVisual('inert', state.valves.inert);
@@ -278,9 +269,9 @@ function render() {
   toggleValveVisual('vapvVacuum', state.valves.vapvVacuum);
   toggleValveVisual('emergency', state.valves.emergency);
 
-  // obstrução da VAPV: indicar visualmente
-  el.vapvFlapOut.style.opacity = state.vapvBlocked ? 0.25 : 1;
-  el.vapvFlapIn.style.opacity = state.vapvBlocked ? 0.25 : 1;
+  // obstrução da VAPV: indicar visualmente (ícone esmaecido + contorno cinza)
+  el.nodeVapv.style.opacity = state.vapvBlocked ? 0.4 : 1;
+  el.nodeVapv.style.filter = state.vapvBlocked ? 'grayscale(1)' : 'none';
 
   // bombas
   const pumping = Math.abs(state.pumpRate) > 0.05;
@@ -307,21 +298,48 @@ function toggleValveVisual(name, isOpen) {
   valEl.textContent = isOpen ? 'ATIVADA' : 'FECHADA';
 
   if (name === 'inert') {
-    el.valveInert.querySelector('.valve-x').style.stroke = isOpen ? 'var(--inert)' : 'var(--text-dim)';
     el.inertFlow.classList.toggle('active', isOpen);
   }
   if (name === 'vapvPressure') {
-    el.vapvFlapOut.classList.toggle('open', isOpen);
     el.ventOutArrows.classList.toggle('active', isOpen);
   }
   if (name === 'vapvVacuum') {
-    el.vapvFlapIn.classList.toggle('open', isOpen);
     el.ventInArrows.classList.toggle('active', isOpen);
   }
   if (name === 'emergency') {
-    el.emergFlap.classList.toggle('open', isOpen);
     el.emergArrows.classList.toggle('active', isOpen);
   }
+
+  // atualiza os nós de imagem (ícones substituíveis)
+  el.nodeInert.classList.toggle('state-inert', state.valves.inert);
+  const vapvOpen = state.valves.vapvPressure || state.valves.vapvVacuum;
+  el.nodeVapv.classList.toggle('state-open', vapvOpen);
+  el.nodeEmerg.classList.toggle('state-crit', state.valves.emergency);
+}
+
+// ---------------------------------------------------------------------
+// RÉGUA DE TEMPERATURA MULTIPONTO (reservada para modelo de inventário futuro)
+// Gera N pontos ao longo da extensão do tanque. Hoje todos refletem a
+// mesma temperatura simulada (modelo de zona única); no futuro cada
+// ponto pode receber seu próprio valor (perfil estratificado).
+// ---------------------------------------------------------------------
+const TEMP_POINTS = 6;
+function buildTempRuler() {
+  el.tempRulerPoints.innerHTML = '';
+  for (let i = 0; i < TEMP_POINTS; i++) {
+    const img = document.createElement('img');
+    img.src = 'icons/instrument-temp-point.svg';
+    img.alt = `Sensor de temperatura TE-${i + 1}`;
+    img.dataset.index = i;
+    el.tempRulerPoints.appendChild(img);
+  }
+}
+function updateTempRuler() {
+  const color = state.temperature > 45 ? '#ea4551' : state.temperature < 5 ? '#38bdf8' : '#f5a623';
+  const glow = `drop-shadow(0 0 4px ${color})`;
+  el.tempRulerPoints.querySelectorAll('img').forEach(img => {
+    img.style.filter = glow;
+  });
 }
 
 function updateOverallStatus() {
@@ -456,6 +474,7 @@ el.btnPauseChart.addEventListener('click', () => {
 // ---------------------------------------------------------------------
 // 9. LOOP PRINCIPAL
 // ---------------------------------------------------------------------
+buildTempRuler();
 updatePumpLabel();
 updateTempLabel();
 render();
